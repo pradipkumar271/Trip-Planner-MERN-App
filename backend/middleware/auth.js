@@ -1,24 +1,42 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWTSECRET || 'secretkey';
+
 module.exports = function (req, res, next) {
 
-    const token = req.header('Authorization');
+    const authHeader = req.header('Authorization');
 
-    if (!token) {
-        return res.status(401).json({ message: "No token" });
+    if (!authHeader) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    if (!authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Invalid authorization format' });
     }
 
     try {
 
-        const decoded = jwt.verify(token.replace("Bearer ", ""), "secretkey");
+        const token = authHeader.slice('Bearer '.length).trim();
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
 
-        req.user = decoded;
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded?.id || decoded?._id || decoded?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Invalid token payload' });
+        }
+
+        req.user = { ...decoded, id: String(userId) };
 
         next();
 
     } catch (err) {
 
-        res.status(401).json({ message: "Invalid token" });
+        console.error('Auth middleware error:', err.message);
+
+        res.status(401).json({ message: 'Invalid token' });
 
     }
 

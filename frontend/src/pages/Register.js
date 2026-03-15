@@ -68,7 +68,7 @@ const Register = () => {
 
     if (showOTP) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
+            <div className="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
                 {/* Animated background gradient orbs */}
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-600/20 rounded-full blur-3xl animate-pulse"></div>
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
@@ -86,7 +86,7 @@ const Register = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
+        <div className="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
             {/* Animated background gradient orbs */}
             <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-600/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>

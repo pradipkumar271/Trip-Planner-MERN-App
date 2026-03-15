@@ -390,6 +390,19 @@ const Dashboard = () => {
     const [formTrip, setFormTrip] = useState(initialTrip);
     const [saving, setSaving] = useState(false);
 
+    const getTripDateValue = (trip, key) => {
+        if (key === 'start') {
+            return trip?.dates?.start || trip?.startDate;
+        }
+        return trip?.dates?.end || trip?.endDate;
+    };
+
+    const parseTripDate = (value) => {
+        if (!value) return null;
+        const parsed = typeof value === 'string' ? parseISO(value) : new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     useEffect(() => {
         loadTrips();
     }, []);
@@ -403,13 +416,21 @@ const Dashboard = () => {
         }
     }, [location]);
 
-    const loadTrips = async () => {
+    const loadTrips = async ({ silent = false } = {}) => {
         try {
             setLoading(true);
             const response = await api.get('/api/trips');
             setTrips(response.data);
+            return true;
         } catch (error) {
             console.error('Error loading trips', error);
+            if (error?.response?.status === 401) {
+                logout();
+            }
+            if (!silent) {
+                alert(error?.response?.data?.message || 'Failed to load trips');
+            }
+            return false;
         } finally {
             setLoading(false);
         }
@@ -420,11 +441,14 @@ const Dashboard = () => {
         return trips
             .filter((trip) => (trip.destination || '').toLowerCase().includes(query.toLowerCase()))
             .filter((trip) => {
+                const startDate = parseTripDate(getTripDateValue(trip, 'start'));
+                const endDate = parseTripDate(getTripDateValue(trip, 'end'));
+
                 if (filter === 'upcoming') {
-                    return trip.startDate ? isAfter(parseISO(trip.startDate), now) : true;
+                    return startDate ? isAfter(startDate, now) : true;
                 }
                 if (filter === 'past') {
-                    return trip.endDate ? isBefore(parseISO(trip.endDate), now) : false;
+                    return endDate ? isBefore(endDate, now) : false;
                 }
                 return true;
             });
@@ -437,13 +461,16 @@ const Dashboard = () => {
     };
 
     const openEdit = (trip) => {
+        const existingStart = getTripDateValue(trip, 'start');
+        const existingEnd = getTripDateValue(trip, 'end');
+
         setSelectedTrip(trip);
         setFormTrip({
             title: trip.title || '',
             source: trip.source || '',
             destination: trip.destination || '',
-            startDate: trip.startDate ? trip.startDate.split('T')[0] : '',
-            endDate: trip.endDate ? trip.endDate.split('T')[0] : '',
+            startDate: existingStart ? String(existingStart).split('T')[0] : '',
+            endDate: existingEnd ? String(existingEnd).split('T')[0] : '',
             budget: trip.budget || '',
             itinerary: trip.itinerary || '',
         });
@@ -457,8 +484,15 @@ const Dashboard = () => {
         const startStr = formTrip.startDate?.trim();
         const endStr = formTrip.endDate?.trim();
 
-        if (!trimTitle || !trimSource || !trimDest || !startStr || !endStr) {
-            alert('Please fill in all required fields: Title, Source, Destination, and Dates');
+        const missingFields = [];
+        if (!trimTitle) missingFields.push('Title');
+        if (!trimSource) missingFields.push('Source');
+        if (!trimDest) missingFields.push('Destination');
+        if (!startStr) missingFields.push('Start Date');
+        if (!endStr) missingFields.push('End Date');
+
+        if (missingFields.length > 0) {
+            alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
             return;
         }
 
@@ -470,16 +504,25 @@ const Dashboard = () => {
             return;
         }
 
+        if (endDate < startDate) {
+            alert('End date cannot be earlier than start date.');
+            return;
+        }
+
         setSaving(true);
         try {
+            const parsedBudget = Number(formTrip.budget);
+
             const tripData = {
                 title: trimTitle,
                 source: trimSource,
                 destination: trimDest,
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),
-                budget: formTrip.budget ? parseInt(formTrip.budget, 10) : 0,
+                budget: Number.isFinite(parsedBudget) && parsedBudget >= 0 ? parsedBudget : 0,
+                background: formTrip.background?.trim() || '',
                 itinerary: formTrip.itinerary?.trim() || '',
+                activities: selectedTrip?.activities || [],
             };
 
             let response;
@@ -489,12 +532,28 @@ const Dashboard = () => {
                 response = await api.post('/api/trips', tripData);
             }
 
+            const savedTrip = response.data;
+            setTrips((previousTrips) => {
+                if (selectedTrip) {
+                    return previousTrips.map((trip) => (trip._id === savedTrip._id ? savedTrip : trip));
+                }
+                return [savedTrip, ...previousTrips];
+            });
+
             alert('Trip saved successfully!');
             setModalOpen(false);
+            setSelectedTrip(null);
             setFormTrip(initialTrip);
-            await loadTrips();
+
+            const refreshed = await loadTrips({ silent: true });
+            if (!refreshed) {
+                alert('Trip saved, but refreshing the trip list failed. Please reload the page.');
+            }
         } catch (error) {
             console.error('Save trip error:', error);
+            if (error?.response?.status === 401) {
+                logout();
+            }
             alert(error?.response?.data?.message || 'Failed to save trip');
         } finally {
             setSaving(false);
@@ -512,10 +571,13 @@ const Dashboard = () => {
     };
 
     const totalBudget = trips.reduce((sum, trip) => sum + Number(trip.budget || 0), 0);
-    const upcomingCount = trips.filter((trip) => trip.startDate && isAfter(parseISO(trip.startDate), new Date())).length;
+    const upcomingCount = trips.filter((trip) => {
+        const startDate = parseTripDate(getTripDateValue(trip, 'start'));
+        return startDate ? isAfter(startDate, new Date()) : false;
+    }).length;
 
     return (
-        <div className="flex min-h-screen bg-gradient-dark">
+        <div className="flex min-h-full bg-gradient-dark">
             <Sidebar onLogout={logout} />
             <div className="flex-1 lg:ml-64 flex flex-col">
                 <Topbar />
@@ -636,6 +698,7 @@ const Dashboard = () => {
                     onSubmit={handleSave}
                     trip={formTrip}
                     setTrip={setFormTrip}
+                    isEditing={Boolean(selectedTrip)}
                     loading={saving}
                 />
 

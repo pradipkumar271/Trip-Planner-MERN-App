@@ -17,31 +17,79 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
 
     try {
-        const { title, source, destination, startDate, endDate, budget, background, itinerary, activities } = req.body;
+        if (!req.user?.id) {
+            return res.status(401).json({ message: 'Unauthorized: user not found in token' });
+        }
 
-        const trip = new Trip({
+        const {
             title,
             source,
             destination,
-            dates: {
-                start: startDate,
-                end: endDate
-            },
+            startDate,
+            endDate,
             budget,
             background,
             itinerary,
-            activities,
+            activities
+        } = req.body;
+
+        const normalizedTitle = String(title || '').trim();
+        const normalizedSource = String(source || '').trim();
+        const normalizedDestination = String(destination || '').trim();
+        const normalizedStart = startDate || req.body?.dates?.start;
+        const normalizedEnd = endDate || req.body?.dates?.end;
+
+        const missingFields = [];
+        if (!normalizedTitle) missingFields.push('title');
+        if (!normalizedSource) missingFields.push('source');
+        if (!normalizedDestination) missingFields.push('destination');
+        if (!normalizedStart) missingFields.push('startDate');
+        if (!normalizedEnd) missingFields.push('endDate');
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                message: `Missing required fields: ${missingFields.join(', ')}`
+            });
+        }
+
+        const parsedStart = new Date(normalizedStart);
+        const parsedEnd = new Date(normalizedEnd);
+
+        if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+            return res.status(400).json({ message: 'Invalid date format for startDate or endDate' });
+        }
+
+        if (parsedEnd < parsedStart) {
+            return res.status(400).json({ message: 'endDate cannot be earlier than startDate' });
+        }
+
+        const numericBudget = Number(budget);
+        const normalizedBudget = Number.isFinite(numericBudget) && numericBudget >= 0 ? numericBudget : 0;
+
+        const trip = new Trip({
+            title: normalizedTitle,
+            source: normalizedSource,
+            destination: normalizedDestination,
+            dates: {
+                start: parsedStart,
+                end: parsedEnd
+            },
+            budget: normalizedBudget,
+            background: String(background || '').trim(),
+            itinerary: String(itinerary || '').trim(),
+            activities: Array.isArray(activities) ? activities : [],
             user: req.user.id
         });
 
         await trip.save();
 
-        res.json(trip);
+        res.status(201).json(trip);
     } catch (err) {
         console.error('Add trip error:', err);
 
         if (err.name === 'ValidationError') {
-            return res.status(400).json({ message: err.message });
+            const fieldErrors = Object.values(err.errors || {}).map((fieldError) => fieldError.message);
+            return res.status(400).json({ message: fieldErrors.join(', ') || err.message });
         }
 
         res.status(500).json({ message: 'Server error' });

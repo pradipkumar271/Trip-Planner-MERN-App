@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { generateOTP, sendOTPEmail } = require('../utils/emailService');
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWTSECRET || 'secretkey';
 
 // ==================== REGISTRATION WITH OTP ====================
 
@@ -109,7 +110,7 @@ router.post('/register/verify-otp', async (req, res) => {
         await user.save();
 
         // Generate JWT token
-        const token = jwt.sign({ id: user._id }, process.env.JWTSECRET)
+        const token = jwt.sign({ id: user._id }, JWT_SECRET)
 
 
         res.json({
@@ -220,7 +221,7 @@ router.post('/login/verify-otp', async (req, res) => {
         await user.save();
 
         // Generate JWT token
-        const token = jwt.sign({ id: user._id }, process.env.JWTSECRET)
+        const token = jwt.sign({ id: user._id }, JWT_SECRET)
 
 
         res.json({
@@ -369,7 +370,7 @@ router.post('/register', async (req, res) => {
 
         await user.save();
 
-        const token = jwt.sign({ id: user._id }, process.env.JWTSECRET);
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
 
 
         res.json({ token, user });
@@ -395,7 +396,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWTSECRET);
+        const token = jwt.sign({ id: user._id }, JWT_SECRET);
 
 
         res.json({ token, user });

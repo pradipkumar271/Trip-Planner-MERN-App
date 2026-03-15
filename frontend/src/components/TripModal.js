@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export default function TripModal({ open, onClose, onSubmit, trip, setTrip, loading }) {
+export default function TripModal({ open, onClose, onSubmit, trip, setTrip, loading, isEditing = false }) {
     const budgetStrength = useMemo(() => {
         if (!trip?.budget) return 0;
         const amount = Number(trip.budget);
@@ -26,7 +26,7 @@ export default function TripModal({ open, onClose, onSubmit, trip, setTrip, load
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
                     <h2 className="text-2xl font-bold text-white">
-                        {trip?._id ? 'Edit Trip' : 'Create New Trip'}
+                        {isEditing ? 'Edit Trip' : 'Create New Trip'}
                     </h2>
                     <button
                         onClick={onClose}
@@ -129,8 +129,8 @@ export default function TripModal({ open, onClose, onSubmit, trip, setTrip, load
                     <div>
                         <label className="block text-sm font-medium text-white/80 mb-2">Notes</label>
                         <textarea
-                            value={trip.notes}
-                            onChange={(e) => setTrip((p) => ({ ...p, notes: e.target.value }))}
+                            value={trip.itinerary || ''}
+                            onChange={(e) => setTrip((p) => ({ ...p, itinerary: e.target.value }))}
                             placeholder="Add trip notes..."
                             rows="3"
                             className="input-field resize-none"
