@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader, Smile, Paperclip } from 'lucide-react';
+import { MessageCircle, X, Send, Loader } from 'lucide-react';
 import api from '../services/api';
 
 const TYPING_MESSAGE_TEXT = 'Thinking about your next trip...';
@@ -8,7 +8,7 @@ const TYPING_MESSAGE_TEXT = 'Thinking about your next trip...';
 const initialMessages = [
     {
         sender: 'ai',
-        text: 'Hi traveler! I\'m your AI trip assistant. Ask me for destination ideas, itinerary tips, budget planning, or adventure activities.',
+        text: "Hi traveler! I'm your AI trip assistant. Ask me for destination ideas, itinerary tips, budget planning, or adventure activities.",
         createdAt: new Date().toISOString(),
     },
 ];
@@ -181,24 +181,6 @@ export default function Chatbot({ mode = 'floating', className = '' }) {
             )}
 
             <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    title="Emoji support coming soon"
-                    className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
-                    aria-label="Emoji support coming soon"
-                >
-                    <Smile size={18} />
-                </button>
-
-                <button
-                    type="button"
-                    title="Attachment support coming soon"
-                    className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
-                    aria-label="Attachment support coming soon"
-                >
-                    <Paperclip size={18} />
-                </button>
-
                 <input
                     type="text"
                     value={message}

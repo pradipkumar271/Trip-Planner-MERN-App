@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Support from './pages/Support';
+import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -30,6 +31,7 @@ function AppLayout() {
           <Route path="/support" element={<Support />} />
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
           <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/discover" element={user ? <Discover /> : <Navigate to="/login" />} />
           <Route path="/chatbot" element={user ? <ChatbotPage /> : <Navigate to="/login" />} />

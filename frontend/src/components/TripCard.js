@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Edit2, Trash2, Calendar, DollarSign } from 'lucide-react';
+import { MapPin, Edit2, Trash2, Calendar, IndianRupee } from 'lucide-react';
 
 export default function TripCard({ trip, onEdit, onDelete }) {
     const start = new Date(trip.dates?.start || trip.startDate);
@@ -56,8 +56,8 @@ export default function TripCard({ trip, onEdit, onDelete }) {
                 {/* Budget */}
                 <div className="mb-4">
                     <div className="flex items-center gap-2 text-primary-400 font-semibold">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="text-lg">${trip.budget || 0}</span>
+                        <IndianRupee className="w-4 h-4" />
+                        <span className="text-lg">₹{Number(trip.budget || 0).toLocaleString('en-IN')}</span>
                     </div>
                 </div>
 

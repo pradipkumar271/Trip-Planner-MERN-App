@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function OTPVerification({ email, onVerify, onBack, mode = 'register' }) {
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [timer, setTimer] = useState(300); // 5 minutes
+    const [timer, setTimer] = useState(300);
     const [canResend, setCanResend] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const { finalizeLogin } = useAuth();
 
     useEffect(() => {
         if (timer === 0) {
@@ -58,6 +60,7 @@ export default function OTPVerification({ email, onVerify, onBack, mode = 'regis
 
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
+                finalizeLogin(response.data.user);
                 onVerify(response.data.user);
             }
         } catch (err) {

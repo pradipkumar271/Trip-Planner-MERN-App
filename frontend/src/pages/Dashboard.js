@@ -367,7 +367,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { parseISO, isAfter, isBefore } from 'date-fns';
-import { Plus, Search, Loader, Plane, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Search, Loader, Plane, Calendar, IndianRupee } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import TripCard from '../components/TripCard';
@@ -411,7 +411,7 @@ const Dashboard = () => {
     useEffect(() => {
         if (location.state?.destination && !modalOpen) {
             setSelectedTrip(null);
-            setFormTrip({ ...initialTrip, destination: location.state.destination });
+            setFormTrip({ ...initialTrip, destination: location.state.destination, budget: location.state.budget ? String(location.state.budget) : '' });
             setModalOpen(true);
         }
     }, [location]);
@@ -622,10 +622,10 @@ const Dashboard = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-white/80 font-medium">Total Budget</h3>
                                     <div className="p-2.5 rounded-lg bg-emerald-500/20 text-emerald-400">
-                                        <DollarSign size={20} />
+                                        <IndianRupee size={20} />
                                     </div>
                                 </div>
-                                <p className="text-4xl font-bold text-white">${totalBudget.toLocaleString()}</p>
+                                <p className="text-4xl font-bold text-white">₹{totalBudget.toLocaleString('en-IN')}</p>
                                 <p className="text-sm text-white/50 mt-2">Planned spending</p>
                             </div>
                         </motion.div>

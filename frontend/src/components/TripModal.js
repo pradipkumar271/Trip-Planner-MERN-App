@@ -6,22 +6,22 @@ export default function TripModal({ open, onClose, onSubmit, trip, setTrip, load
     const budgetStrength = useMemo(() => {
         if (!trip?.budget) return 0;
         const amount = Number(trip.budget);
-        if (amount >= 5000) return 100;
-        if (amount >= 3000) return 70;
-        if (amount >= 1500) return 40;
+        if (amount >= 100000) return 100;
+        if (amount >= 50000) return 70;
+        if (amount >= 20000) return 40;
         return 20;
     }, [trip]);
 
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="w-full max-w-md card-glass"
+                className="w-full max-w-md card-glass my-auto max-h-[90vh] overflow-y-auto"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
@@ -98,7 +98,7 @@ export default function TripModal({ open, onClose, onSubmit, trip, setTrip, load
 
                     {/* Budget */}
                     <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Budget</label>
+                        <label className="block text-sm font-medium text-white/80 mb-2">Budget (₹)</label>
                         <input
                             type="number"
                             value={trip.budget || ''}

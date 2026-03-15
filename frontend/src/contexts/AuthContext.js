@@ -18,6 +18,19 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
     };
 
+    const finalizeLogin = (userData) => {
+        if (userData) {
+            localStorage.setItem("user", JSON.stringify(userData));
+            setUser(userData);
+        }
+    };
+
+    const updateUser = (userData) => {
+        const merged = { ...user, ...userData };
+        localStorage.setItem("user", JSON.stringify(merged));
+        setUser(merged);
+    };
+
     // ================= REGISTER =================
 
     const register = async (email, password, name) => {
@@ -106,6 +119,8 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         verifyLoginOtp,
+        finalizeLogin,
+        updateUser,
         logout,
         user
     };

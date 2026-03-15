@@ -314,17 +314,18 @@ const Discover = () => {
 
                                     {/* Price */}
                                     <div className="mb-4">
-                                        <p className="text-white/60 text-xs mb-1">Starting from</p>
+                                        <p className="text-white/60 text-xs mb-1">Estimated budget</p>
                                         <p className="text-3xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-cyan-400 bg-clip-text">
                                             ₹{deal.price.toLocaleString('en-IN')}
                                         </p>
+                                        <p className="text-white/40 text-xs mt-1">Pre-filled in your trip budget</p>
                                     </div>
                                 </div>
 
                                 {/* Action */}
                                 <div className="px-6 pb-6 pt-0">
                                     <button
-                                        onClick={() => navigate('/dashboard', { state: { destination: deal.city } })}
+                                        onClick={() => navigate('/dashboard', { state: { destination: deal.city, budget: deal.price } })}
                                         className="w-full btn-primary group"
                                     >
                                         <span>Plan This Trip</span>

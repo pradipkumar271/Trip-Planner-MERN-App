@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Trip = require('../models/Trip');
+const auth = require('../middleware/auth');
 const { generateOTP, sendOTPEmail } = require('../utils/emailService');
 
 const router = express.Router();
@@ -26,19 +28,17 @@ router.post('/register/send-otp', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
+        // Hash password first so `hash` is available below
+        const hash = await bcrypt.hash(password, 10);
+
         // Generate OTP
         const otp = generateOTP();
-        const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
-
-        console.log(`\n📧 OTP Generated for ${email}`);
-        console.log(`OTP Code: ${otp}`);
-        console.log(`Expires at: ${otpExpires}\n`);
-
-        // Hash password
-        const hash = await bcrypt.hash(password, 10);
+        const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
         // If user exists but not verified, update; otherwise create new
         if (user) {
+            user.name = name;
+            user.password = hash;
             user.otp = otp;
             user.otpExpires = otpExpires;
             user.tempData = { name, password: hash };
@@ -158,16 +158,10 @@ router.post('/login/send-otp', async (req, res) => {
             return res.status(400).json({ message: 'Please verify your email first' });
         }
 
-        // Generate OTP
+        // Generate OTP and save both otp + expiry together
         const otp = generateOTP();
-        const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
-
-        console.log(`\n📧 OTP Generated for ${email}`);
-        console.log(`OTP Code: ${otp}`);
-        console.log(`Expires at: ${otpExpires}\n`);
-
         user.otp = otp;
-        user.otpExpires = otpExpires;
+        user.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
         await user.save();
 
         // Send OTP to email
@@ -348,6 +342,69 @@ router.post('/login/resend-otp', async (req, res) => {
     } catch (err) {
         console.error('❌ Login resend OTP error:', err.message);
         res.status(500).json({ message: 'Failed to resend OTP. Please try again.' });
+    }
+});
+
+// ==================== PROFILE ROUTES ====================
+
+// GET profile with trip stats
+router.get('/profile', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password -otp -otpExpires -otpResendCooldown -tempData');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const trips = await Trip.find({ user: req.user.id });
+        const now = new Date();
+        const totalBudget = trips.reduce((sum, t) => sum + Number(t.budget || 0), 0);
+        const upcomingTrips = trips.filter(t => t.dates?.start && new Date(t.dates.start) > now).length;
+        const pastTrips = trips.filter(t => t.dates?.end && new Date(t.dates.end) < now).length;
+
+        res.json({
+            user,
+            stats: { totalTrips: trips.length, totalBudget, upcomingTrips, pastTrips }
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// PUT update profile (name, phone, bio)
+router.put('/profile', auth, async (req, res) => {
+    try {
+        const { name, phone, bio } = req.body;
+        if (!name?.trim()) return res.status(400).json({ message: 'Name is required' });
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { name: name.trim(), phone: (phone || '').trim(), bio: (bio || '').trim() },
+            { new: true }
+        ).select('-password -otp -otpExpires -otpResendCooldown -tempData');
+
+        res.json({ message: 'Profile updated', user });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// PUT change password
+router.put('/change-password', auth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword)
+            return res.status(400).json({ message: 'Both current and new password are required' });
+        if (newPassword.length < 6)
+            return res.status(400).json({ message: 'New password must be at least 6 characters' });
+
+        const user = await User.findById(req.user.id);
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

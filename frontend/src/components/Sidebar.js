@@ -30,7 +30,7 @@ export default function Sidebar({ onLogout }) {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 mb-8">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
-                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        {(user?.name || 'U').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{user?.name || 'Adventurer'}</p>

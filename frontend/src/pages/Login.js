@@ -30,18 +30,14 @@ const Login = () => {
             setShowOTP(true);
         } catch (error) {
             console.error('Login OTP failed:', error);
-            setLoginError(error?.response?.data?.message || 'Failed to send OTP');
+            setLoginError(error?.message || 'Failed to send OTP');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleOTPVerify = async (user) => {
-        try {
-            navigate('/dashboard');
-        } catch (error) {
-            setLoginError(error.message);
-        }
+    const handleOTPVerify = (user) => {
+        navigate('/dashboard');
     };
 
 
