@@ -7,17 +7,17 @@ import ContactForm from '../components/common/ContactForm';
 const supportDetails = [
     {
         title: 'Support Email',
-        value: 'support@tripplanner.app',
+        value: 'pradipkumar94632@gmail.com',
         icon: Mail,
     },
     {
         title: 'Phone',
-        value: '+91 98765 43210',
+        value: '+91 8347112562',
         icon: Phone,
     },
     {
         title: 'Office Location',
-        value: 'Ahmedabad, Gujarat, India',
+        value: 'Amreli, Gujarat, India',
         icon: MapPin,
     },
     {
