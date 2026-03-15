@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -11,28 +12,28 @@ function AppContent() {
   const { user } = useAuth();
 
   return (
-    <div className="App">
-      <Router>
+    <Router>
+      <div className="App min-h-screen">
         {user && <Navbar />}
-        <div className="container">
-          <Routes>
-            <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/discover" element={user ? <Discover /> : <Navigate to="/login" />} />
-            <Route path="/" element={<Navigate to={user ? "/discover" : "/login"} />} />
-          </Routes>
-        </div>
-      </Router>
-    </div>
+        <Routes>
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+          <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/discover" element={user ? <Discover /> : <Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to={user ? "/discover" : "/login"} />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

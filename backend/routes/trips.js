@@ -48,4 +48,50 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
+router.put('/:id', auth, async (req, res) => {
+    try {
+        const trip = await Trip.findOneAndUpdate(
+            { _id: req.params.id, user: req.user.id },
+            {
+                title: req.body.title,
+                source: req.body.source,
+                destination: req.body.destination,
+                dates: {
+                    start: req.body.startDate || req.body.dates?.start,
+                    end: req.body.endDate || req.body.dates?.end
+                },
+                budget: req.body.budget,
+                background: req.body.background,
+                itinerary: req.body.itinerary,
+                activities: req.body.activities || []
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!trip) {
+            return res.status(404).json({ message: 'Trip not found' });
+        }
+
+        res.json(trip);
+    } catch (err) {
+        console.error('Update trip error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        const trip = await Trip.findOneAndDelete({ _id: req.params.id, user: req.user.id });
+
+        if (!trip) {
+            return res.status(404).json({ message: 'Trip not found' });
+        }
+
+        res.json({ message: 'Trip deleted' });
+    } catch (err) {
+        console.error('Delete trip error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

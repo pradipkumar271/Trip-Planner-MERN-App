@@ -1,242 +1,648 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import {
-    Container, Typography, Button, Card, CardContent, Grid,
-    TextField, Box, Dialog, DialogTitle, DialogContent, DialogActions
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import { format } from 'date-fns';
+// import React, { useState, useEffect, useMemo } from 'react';
+// import { motion } from 'framer-motion';
+// import { useLocation } from 'react-router-dom';
+// import { parseISO, isAfter, isBefore } from 'date-fns';
+// import { Plus, Search, Loader, Plane, Calendar, DollarSign } from 'lucide-react';
+// import Sidebar from '../components/Sidebar';
+// import Topbar from '../components/Topbar';
+// import TripCard from '../components/TripCard';
+// import TripModal from '../components/TripModal';
+// import Chatbot from '../components/Chatbot';
+// import api from '../services/api';
+// import { useAuth } from '../contexts/AuthContext';
+
+// const initialTrip = { title: '', source: '', destination: '', startDate: '', endDate: '', budget: '', itinerary: '' };
+
+// const Dashboard = () => {
+//     const location = useLocation();
+//     const { logout } = useAuth();
+//     const [trips, setTrips] = useState([]);
+//     const [query, setQuery] = useState('');
+//     const [filter, setFilter] = useState('all');
+//     const [loading, setLoading] = useState(false);
+//     const [modalOpen, setModalOpen] = useState(false);
+//     const [selectedTrip, setSelectedTrip] = useState(null);
+//     const [formTrip, setFormTrip] = useState(initialTrip);
+//     const [saving, setSaving] = useState(false);
+
+//     useEffect(() => {
+//         loadTrips();
+//     }, []);
+
+//     // Handle navigation from Discover page with destination pre-filled
+//     useEffect(() => {
+//         if (location.state?.destination && !modalOpen) {
+//             setSelectedTrip(null);
+//             setFormTrip({
+//                 title: '',
+//                 source: '',
+//                 destination: location.state.destination,
+//                 startDate: '',
+//                 endDate: '',
+//                 budget: '',
+//                 itinerary: ''
+//             });
+//             setModalOpen(true);
+//         }
+//     }, [location]);
+
+//     const loadTrips = async () => {
+//         try {
+//             setLoading(true);
+//             const response = await api.get('/api/trips');
+//             setTrips(response.data);
+//         } catch (error) {
+//             console.error('Error loading trips', error);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const filteredTrips = useMemo(() => {
+//         const now = new Date();
+//         return trips
+//             .filter((trip) => (trip.destination || '').toLowerCase().includes(query.toLowerCase()))
+//             .filter((trip) => {
+//                 if (filter === 'upcoming') {
+//                     return trip.startDate ? isAfter(parseISO(trip.startDate), now) : true;
+//                 }
+//                 if (filter === 'past') {
+//                     return trip.endDate ? isBefore(parseISO(trip.endDate), now) : false;
+//                 }
+//                 return true;
+//             });
+//     }, [trips, query, filter]);
+
+//     const openCreate = () => {
+//         setSelectedTrip(null);
+//         setFormTrip(initialTrip);
+//         setModalOpen(true);
+//     };
+
+//     const openEdit = (trip) => {
+//         setSelectedTrip(trip);
+//         setFormTrip({
+//             title: trip.title || '',
+//             source: trip.source || '',
+//             destination: trip.destination || '',
+//             startDate: trip.dates?.start ? trip.dates.start.split('T')[0] : '',
+//             endDate: trip.dates?.end ? trip.dates.end.split('T')[0] : '',
+//             budget: trip.budget || '',
+//             itinerary: trip.itinerary || '',
+//         });
+//         setModalOpen(true);
+//     };
+
+//     const handleSave = async () => {
+//         // Validate all required fields with explicit checks
+//         const trimTitle = formTrip.title?.trim();
+//         const trimSource = formTrip.source?.trim();
+//         const trimDest = formTrip.destination?.trim();
+//         const startStr = formTrip.startDate?.trim();
+//         const endStr = formTrip.endDate?.trim();
+
+//         if (!trimTitle || !trimSource || !trimDest || !startStr || !endStr) {
+//             alert('Please fill in all required fields: Title, Source, Destination, and Dates');
+//             return;
+//         }
+
+//         setSaving(true);
+//         try {
+//             console.log('Raw form data:', {
+//                 startDate: formTrip.startDate,
+//                 endDate: formTrip.endDate,
+//                 title: formTrip.title,
+//                 source: formTrip.source,
+//                 destination: formTrip.destination
+//             });
+
+//             // Create Date objects from the date strings
+//             // HTML5 date input returns YYYY-MM-DD format
+//             const startDate = new Date(formTrip.startDate);
+//             const endDate = new Date(formTrip.endDate);
+
+//             console.log('Parsed Dates:', {
+//                 startDate: startDate,
+//                 endDate: endDate,
+//                 startISO: startDate.toISOString(),
+//                 endISO: endDate.toISOString(),
+//                 startTime: startDate.getTime(),
+//                 endTime: endDate.getTime()
+//             });
+
+//             // Validate dates
+//             if (isNaN(startDate.getTime())) {
+//                 alert('Invalid start date. Please use the date picker.');
+//                 setSaving(false);
+//                 return;
+//             }
+//             if (isNaN(endDate.getTime())) {
+//                 alert('Invalid end date. Please use the date picker.');
+//                 setSaving(false);
+//                 return;
+//             }
+
+//             const tripData = {
+//                 title: trimTitle,
+//                 source: trimSource,
+//                 destination: trimDest,
+//                 startDate: startDate.toISOString(),
+//                 endDate: endDate.toISOString(),
+//                 budget: formTrip.budget ? parseInt(formTrip.budget, 10) : 0,
+//                 itinerary: formTrip.itinerary?.trim() || ''
+//             };
+
+//             console.log('Final Trip Data to send:', JSON.stringify(tripData, null, 2));
+
+//             let response;
+//             if (selectedTrip) {
+//                 response = await api.put(`/api/trips/${selectedTrip._id}`, tripData);
+//                 console.log('Update response:', response.data);
+//             } else {
+//                 response = await api.post('/api/trips', tripData);
+//                 console.log('Create response:', response.data);
+//             }
+
+//             alert('Trip saved successfully!');
+//             setModalOpen(false);
+//             setFormTrip(initialTrip);
+//             await loadTrips();
+//         } catch (error) {
+//             console.error('Save trip error:', error);
+//             console.error('Error response:', error?.response?.data);
+//             const errorMsg = error?.response?.data?.message || error?.message || 'Failed to save trip';
+//             alert(`Error: ${errorMsg}`);
+//         } finally {
+//             setSaving(false);
+//         }
+//     };
+
+//     const handleDelete = async (id) => {
+//         if (!window.confirm('Delete this trip?')) return;
+//         try {
+//             await api.delete(`/api/trips/${id}`);
+//             setTrips((prev) => prev.filter((trip) => trip._id !== id));
+//         } catch (error) {
+//             console.error('Delete trip error', error);
+//         }
+//     };
+
+//     const totalBudget = trips.reduce((sum, trip) => sum + Number(trip.budget || 0), 0);
+//     const upcomingCount = trips.filter((trip) => trip.dates?.start && isAfter(parseISO(trip.dates.start), new Date())).length;
+
+//     return (
+//         <div className="flex min-h-screen bg-gradient-dark">
+//             <Sidebar onLogout={logout} />
+//             <div className="flex-1 lg:ml-64 flex flex-col">
+//                 <Topbar />
+
+//                 <main className="flex-1 overflow-y-auto pt-24 lg:pt-20 pb-12">
+//                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+//                         {/* Header */}
+//                         <motion.div
+//                             initial={{ opacity: 0, y: 20 }}
+//                             animate={{ opacity: 1, y: 0 }}
+//                             transition={{ duration: 0.4 }}
+//                             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"
+//                         >
+//                             <div>
+//                                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Your Trips</h1>
+//                                 <p className="text-white/60">Manage your journeys and ask AI for travel advice</p>
+//                             </div>
+//                             <button
+//                                 onClick={openCreate}
+//                                 className="btn-primary flex items-center gap-2 w-fit"
+//                             >
+//                                 <Plus size={20} />
+//                                 New Trip
+//                             </button>
+//                         </motion.div>
+
+//                         {/* Stats Cards */}
+//                         <motion.div
+//                             initial={{ opacity: 0, y: 20 }}
+//                             animate={{ opacity: 1, y: 0 }}
+//                             transition={{ duration: 0.4, delay: 0.1 }}
+//                             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+//                         >
+//                             {/* Total Trips */}
+//                             <div className="card-glass p-6">
+//                                 <div className="flex items-center justify-between mb-4">
+//                                     <h3 className="text-white/80 font-medium">Total Trips</h3>
+//                                     <div className="p-2.5 rounded-lg bg-primary-500/20 text-primary-400">
+//                                         <Plane size={20} />
+//                                     </div>
+//                                 </div>
+//                                 <p className="text-4xl font-bold text-white">{trips.length}</p>
+//                                 <p className="text-sm text-white/50 mt-2">All your adventures</p>
+//                             </div>
+
+//                             {/* Upcoming Trips */}
+//                             <div className="card-glass p-6">
+//                                 <div className="flex items-center justify-between mb-4">
+//                                     <h3 className="text-white/80 font-medium">Upcoming Trips</h3>
+//                                     <div className="p-2.5 rounded-lg bg-cyan-500/20 text-cyan-400">
+//                                         <Calendar size={20} />
+//                                     </div>
+//                                 </div>
+//                                 <p className="text-4xl font-bold text-white">{upcomingCount}</p>
+//                                 <p className="text-sm text-white/50 mt-2">Coming soon</p>
+//                             </div>
+
+//                             {/* Budget */}
+//                             <div className="card-glass p-6">
+//                                 <div className="flex items-center justify-between mb-4">
+//                                     <h3 className="text-white/80 font-medium">Total Budget</h3>
+//                                     <div className="p-2.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+//                                         <DollarSign size={20} />
+//                                     </div>
+//                                 </div>
+//                                 <p className="text-4xl font-bold text-white">${totalBudget.toLocaleString()}</p>
+//                                 <p className="text-sm text-white/50 mt-2">Planned spending</p>
+//                             </div>
+//                         </motion.div>
+
+//                         {/* Search & Filter */}
+//                         <motion.div
+//                             initial={{ opacity: 0, y: 20 }}
+//                             animate={{ opacity: 1, y: 0 }}
+//                             transition={{ duration: 0.4, delay: 0.2 }}
+//                             className="card-glass p-6 mb-8"
+//                         >
+//                             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+//                                 {/* Search */}
+//                                 <div className="flex-1 relative">
+//                                     <Search className="absolute left-4 top-3.5 w-5 h-5 text-primary-400/60 pointer-events-none" />
+//                                     <input
+//                                         type="text"
+//                                         value={query}
+//                                         onChange={(e) => setQuery(e.target.value)}
+//                                         placeholder="Search destination..."
+//                                         className="input-field pl-12 w-full"
+//                                     />
+//                                 </div>
+
+//                                 {/* Filter Buttons */}
+//                                 <div className="flex gap-2 flex-wrap">
+//                                     {['all', 'upcoming', 'past'].map((f) => (
+//                                         <button
+//                                             key={f}
+//                                             onClick={() => setFilter(f)}
+//                                             className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-300 capitalize ${filter === f
+//                                                 ? 'bg-gradient-to-r from-primary-600 to-cyan-600 text-white shadow-glow-blue'
+//                                                 : 'text-white/60 hover:text-white hover:bg-white/10'
+//                                                 }`}
+//                                         >
+//                                             {f}
+//                                         </button>
+//                                     ))}
+//                                 </div>
+//                             </div>
+//                         </motion.div>
+
+//                         {/* Trips Grid or Loading */}
+//                         {loading ? (
+//                             <div className="flex items-center justify-center py-20">
+//                                 <div className="flex flex-col items-center gap-4">
+//                                     <Loader className="w-12 h-12 text-primary-500 animate-spin" />
+//                                     <p className="text-white/60">Loading your trips...</p>
+//                                 </div>
+//                             </div>
+//                         ) : filteredTrips.length > 0 ? (
+//                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//                                 {filteredTrips.map((trip) => (
+//                                     <TripCard
+//                                         key={trip._id}
+//                                         trip={trip}
+//                                         onEdit={openEdit}
+//                                         onDelete={handleDelete}
+//                                     />
+//                                 ))}
+//                             </div>
+//                         ) : (
+//                             <motion.div
+//                                 initial={{ opacity: 0 }}
+//                                 animate={{ opacity: 1 }}
+//                                 className="card-glass p-12 text-center border border-white/10"
+//                             >
+//                                 <Plane className="w-16 h-16 text-white/20 mx-auto mb-4" />
+//                                 <h3 className="text-xl font-bold text-white mb-2">No trips found</h3>
+//                                 <p className="text-white/60 mb-6">
+//                                     {query ? 'Try adjusting your search' : 'Create your first adventure now'}
+//                                 </p>
+//                                 {!query && (
+//                                     <button
+//                                         onClick={openCreate}
+//                                         className="btn-primary inline-flex items-center gap-2"
+//                                     >
+//                                         <Plus size={20} />
+//                                         Create Trip
+//                                     </button>
+//                                 )}
+//                             </motion.div>
+//                         )}
+//                     </div>
+//                 </main>
+
+//                 {/* Trip Modal */}
+//                 <TripModal
+//                     open={modalOpen}
+//                     onClose={() => setModalOpen(false)}
+//                     onSubmit={handleSave}
+//                     trip={formTrip}
+//                     setTrip={setFormTrip}
+//                     loading={saving}
+//                 />
+
+//                 {/* Chatbot */}
+//                 <Chatbot />
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default Dashboard;
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
+import { parseISO, isAfter, isBefore } from 'date-fns';
+import { Plus, Search, Loader, Plane, Calendar, DollarSign } from 'lucide-react';
+import Sidebar from '../components/Sidebar';
+import Topbar from '../components/Topbar';
+import TripCard from '../components/TripCard';
+import TripModal from '../components/TripModal';
+import Chatbot from '../components/Chatbot';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+const initialTrip = { title: '', source: '', destination: '', startDate: '', endDate: '', budget: '', itinerary: '' };
 
 const Dashboard = () => {
+    const location = useLocation();
+    const { logout } = useAuth();
     const [trips, setTrips] = useState([]);
-    const [open, setOpen] = useState(false);
-    const [newTrip, setNewTrip] = useState({
-        title: '',
-        source: '',
-        destination: '',
-        startDate: '',
-        endDate: '',
-        budget: 0,
-        background: '',
-        itinerary: ''
-    });
+    const [query, setQuery] = useState('');
+    const [filter, setFilter] = useState('all');
+    const [loading, setLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedTrip, setSelectedTrip] = useState(null);
+    const [formTrip, setFormTrip] = useState(initialTrip);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetchTrips();
+        loadTrips();
     }, []);
 
-    const getAuthHeaders = () => {
-        const token = localStorage.getItem('token');
-        return token ? { Authorization: `Bearer ${token}` } : {};
-    };
+    // Pre-fill destination if navigated from Discover page
+    useEffect(() => {
+        if (location.state?.destination && !modalOpen) {
+            setSelectedTrip(null);
+            setFormTrip({ ...initialTrip, destination: location.state.destination });
+            setModalOpen(true);
+        }
+    }, [location]);
 
-    const fetchCoordinates = async (place) => {
+    const loadTrips = async () => {
         try {
-            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`);
-            const data = await resp.json();
-            if (data.length === 0) return null;
-            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        } catch (err) {
-            console.error('Geocode error', err);
-            return null;
+            setLoading(true);
+            const response = await api.get('/api/trips');
+            setTrips(response.data);
+        } catch (error) {
+            console.error('Error loading trips', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const getDistanceKm = (p1, p2) => {
-        if (!p1 || !p2) return null;
-        const toRad = (v) => (v * Math.PI) / 180;
-        const R = 6371;
-        const dLat = toRad(p2.lat - p1.lat);
-        const dLon = toRad(p2.lon - p1.lon);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(p1.lat)) * Math.cos(toRad(p2.lat)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-    const fetchTrips = async () => {
-        try {
-            const res = await axios.get('http://127.0.0.1:5000/api/trips', {
-                headers: getAuthHeaders(),
+    const filteredTrips = useMemo(() => {
+        const now = new Date();
+        return trips
+            .filter((trip) => (trip.destination || '').toLowerCase().includes(query.toLowerCase()))
+            .filter((trip) => {
+                if (filter === 'upcoming') {
+                    return trip.startDate ? isAfter(parseISO(trip.startDate), now) : true;
+                }
+                if (filter === 'past') {
+                    return trip.endDate ? isBefore(parseISO(trip.endDate), now) : false;
+                }
+                return true;
             });
+    }, [trips, query, filter]);
 
-            const enriched = await Promise.all(res.data.map(async (trip) => {
-                const sourceCoords = trip.source ? await fetchCoordinates(trip.source) : null;
-                const destCoords = trip.destination ? await fetchCoordinates(trip.destination) : null;
-                return {
-                    ...trip,
-                    sourceCoords,
-                    destCoords,
-                    distanceKm: sourceCoords && destCoords ? getDistanceKm(sourceCoords, destCoords) : null,
-                };
-            }));
-
-            setTrips(enriched);
-        } catch (err) {
-            console.error('Failed to fetch trips', err);
-            if (err.response) {
-                alert(`Fetch trips failed: ${err.response.data.message || err.response.statusText}`);
-            } else {
-                alert('Fetch trips failed: Network Error');
-            }
-        }
+    const openCreate = () => {
+        setSelectedTrip(null);
+        setFormTrip(initialTrip);
+        setModalOpen(true);
     };
 
-    const handleSubmit = async () => {
+    const openEdit = (trip) => {
+        setSelectedTrip(trip);
+        setFormTrip({
+            title: trip.title || '',
+            source: trip.source || '',
+            destination: trip.destination || '',
+            startDate: trip.startDate ? trip.startDate.split('T')[0] : '',
+            endDate: trip.endDate ? trip.endDate.split('T')[0] : '',
+            budget: trip.budget || '',
+            itinerary: trip.itinerary || '',
+        });
+        setModalOpen(true);
+    };
+
+    const handleSave = async () => {
+        const trimTitle = formTrip.title?.trim();
+        const trimSource = formTrip.source?.trim();
+        const trimDest = formTrip.destination?.trim();
+        const startStr = formTrip.startDate?.trim();
+        const endStr = formTrip.endDate?.trim();
+
+        if (!trimTitle || !trimSource || !trimDest || !startStr || !endStr) {
+            alert('Please fill in all required fields: Title, Source, Destination, and Dates');
+            return;
+        }
+
+        const startDate = new Date(formTrip.startDate);
+        const endDate = new Date(formTrip.endDate);
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            alert('Invalid dates. Please use the date picker.');
+            return;
+        }
+
+        setSaving(true);
         try {
-            await axios.post('http://127.0.0.1:5000/api/trips', newTrip, {
-                headers: getAuthHeaders(),
-            });
-            setOpen(false);
-            setNewTrip({ title: '', source: '', destination: '', startDate: '', endDate: '', budget: 0, background: '', itinerary: '' });
-            fetchTrips();
-        } catch (err) {
-            console.error('Add trip failed', err);
-            if (err.response) {
-                alert(`Add trip failed: ${err.response.data.message || err.response.statusText}`);
+            const tripData = {
+                title: trimTitle,
+                source: trimSource,
+                destination: trimDest,
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+                budget: formTrip.budget ? parseInt(formTrip.budget, 10) : 0,
+                itinerary: formTrip.itinerary?.trim() || '',
+            };
+
+            let response;
+            if (selectedTrip) {
+                response = await api.put(`/api/trips/${selectedTrip._id}`, tripData);
             } else {
-                alert('Add trip failed: Network Error');
+                response = await api.post('/api/trips', tripData);
             }
+
+            alert('Trip saved successfully!');
+            setModalOpen(false);
+            setFormTrip(initialTrip);
+            await loadTrips();
+        } catch (error) {
+            console.error('Save trip error:', error);
+            alert(error?.response?.data?.message || 'Failed to save trip');
+        } finally {
+            setSaving(false);
         }
     };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Delete this trip?')) return;
+        try {
+            await api.delete(`/api/trips/${id}`);
+            setTrips((prev) => prev.filter((trip) => trip._id !== id));
+        } catch (error) {
+            console.error('Delete trip error', error);
+        }
+    };
+
+    const totalBudget = trips.reduce((sum, trip) => sum + Number(trip.budget || 0), 0);
+    const upcomingCount = trips.filter((trip) => trip.startDate && isAfter(parseISO(trip.startDate), new Date())).length;
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-                <Typography variant="h4">My Trips</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setOpen(true)}
-                >
-                    Add Trip
-                </Button>
-            </Box>
+        <div className="flex min-h-screen bg-gradient-dark">
+            <Sidebar onLogout={logout} />
+            <div className="flex-1 lg:ml-64 flex flex-col">
+                <Topbar />
+                <main className="flex-1 overflow-y-auto pt-24 lg:pt-20 pb-12">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        {/* Header */}
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                            <div>
+                                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Your Trips</h1>
+                                <p className="text-white/60">Manage your journeys and ask AI for travel advice</p>
+                            </div>
+                            <button onClick={openCreate} className="btn-primary flex items-center gap-2 w-fit">
+                                <Plus size={20} /> New Trip
+                            </button>
+                        </motion.div>
 
-            <Grid container spacing={3}>
-                {trips.map(trip => {
-                    const mapPlace = trip.destCoords || trip.sourceCoords ?
-                        `${trip.source || ''} ${trip.destination || ''}` : trip.destination;
-                    const mapUrl = `https://www.openstreetmap.org/export/embed.html?search=${encodeURIComponent(mapPlace)}`;
+                        {/* Stats Cards */}
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="card-glass p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-white/80 font-medium">Total Trips</h3>
+                                    <div className="p-2.5 rounded-lg bg-primary-500/20 text-primary-400">
+                                        <Plane size={20} />
+                                    </div>
+                                </div>
+                                <p className="text-4xl font-bold text-white">{trips.length}</p>
+                                <p className="text-sm text-white/50 mt-2">All your adventures</p>
+                            </div>
 
-                    return (
-                        <Grid item xs={12} sm={6} md={4} key={trip._id}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6">{trip.title}</Typography>
-                                    <Typography color="textSecondary">{trip.source} → {trip.destination}</Typography>
-                                    <Typography sx={{ mt: 1 }}>
-                                        {format(new Date(trip.dates.start), 'MMM dd')} -
-                                        {format(new Date(trip.dates.end), 'MMM dd')}
-                                    </Typography>
-                                    <Typography>Budget: ${trip.budget}</Typography>
-                                    {trip.distanceKm && (
-                                        <Typography color="textSecondary">
-                                            Distance: {trip.distanceKm.toFixed(1)} km
-                                        </Typography>
-                                    )}
-                                    {trip.background && (
-                                        <Typography sx={{ mt: 1 }}>{trip.background}</Typography>
-                                    )}
-                                    {trip.itinerary && (
-                                        <Typography sx={{ mt: 1 }} color="textSecondary">
-                                            Plan: {trip.itinerary}
-                                        </Typography>
-                                    )}
-                                    <Box sx={{ mt: 2, height: 200 }}>
-                                        <iframe
-                                            title={`map-${trip._id}`}
-                                            src={mapUrl}
-                                            style={{ border: 0, width: '100%', height: '100%' }}
-                                            loading="lazy"
-                                        />
-                                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                                            Map view: source+destination location search
-                                        </Typography>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    );
-                })}
-            </Grid>
+                            <div className="card-glass p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-white/80 font-medium">Upcoming Trips</h3>
+                                    <div className="p-2.5 rounded-lg bg-cyan-500/20 text-cyan-400">
+                                        <Calendar size={20} />
+                                    </div>
+                                </div>
+                                <p className="text-4xl font-bold text-white">{upcomingCount}</p>
+                                <p className="text-sm text-white/50 mt-2">Coming soon</p>
+                            </div>
 
-            {/* Add Trip Dialog */}
-            <Dialog open={open} onClose={() => setOpen(false)}>
-                <DialogTitle>Add New Trip</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        fullWidth
-                        label="Trip Title"
-                        value={newTrip.title}
-                        onChange={(e) => setNewTrip({ ...newTrip, title: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                    <TextField
-                        fullWidth
-                        label="Source"
-                        value={newTrip.source}
-                        onChange={(e) => setNewTrip({ ...newTrip, source: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                    <TextField
-                        fullWidth
-                        label="Destination"
-                        value={newTrip.destination}
-                        onChange={(e) => setNewTrip({ ...newTrip, destination: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                        <TextField
-                            type="date"
-                            label="Start Date"
-                            value={newTrip.startDate}
-                            onChange={(e) => setNewTrip({ ...newTrip, startDate: e.target.value })}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                        <TextField
-                            type="date"
-                            label="End Date"
-                            value={newTrip.endDate}
-                            onChange={(e) => setNewTrip({ ...newTrip, endDate: e.target.value })}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                    </Box>
-                    <TextField
-                        fullWidth
-                        label="Budget ($)"
-                        type="number"
-                        value={newTrip.budget}
-                        onChange={(e) => setNewTrip({ ...newTrip, budget: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                    <TextField
-                        fullWidth
-                        label="Trip Background"
-                        multiline
-                        minRows={2}
-                        value={newTrip.background}
-                        onChange={(e) => setNewTrip({ ...newTrip, background: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                    <TextField
-                        fullWidth
-                        label="Itinerary / Enjoyment Notes"
-                        multiline
-                        minRows={3}
-                        value={newTrip.itinerary}
-                        onChange={(e) => setNewTrip({ ...newTrip, itinerary: e.target.value })}
-                        sx={{ mt: 2 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">Add Trip</Button>
-                </DialogActions>
-            </Dialog>
-        </Container>
+                            <div className="card-glass p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-white/80 font-medium">Total Budget</h3>
+                                    <div className="p-2.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                                        <DollarSign size={20} />
+                                    </div>
+                                </div>
+                                <p className="text-4xl font-bold text-white">${totalBudget.toLocaleString()}</p>
+                                <p className="text-sm text-white/50 mt-2">Planned spending</p>
+                            </div>
+                        </motion.div>
+
+                        {/* Search & Filter */}
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} className="card-glass p-6 mb-8">
+                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-4 top-3.5 w-5 h-5 text-primary-400/60 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder="Search destination..."
+                                        className="input-field pl-12 w-full"
+                                    />
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    {['all', 'upcoming', 'past'].map((f) => (
+                                        <button
+                                            key={f}
+                                            onClick={() => setFilter(f)}
+                                            className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-300 capitalize ${filter === f
+                                                ? 'bg-gradient-to-r from-primary-600 to-cyan-600 text-white shadow-glow-blue'
+                                                : 'text-white/60 hover:text-white hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {f}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Trips Grid */}
+                        {loading ? (
+                            <div className="flex items-center justify-center py-20">
+                                <Loader className="w-12 h-12 text-primary-500 animate-spin" />
+                            </div>
+                        ) : filteredTrips.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredTrips.map((trip) => (
+                                    <TripCard
+                                        key={trip._id}
+                                        trip={trip}
+                                        onEdit={openEdit}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-glass p-12 text-center border border-white/10">
+                                <Plane className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-white mb-2">No trips found</h3>
+                                <p className="text-white/60 mb-6">{query ? 'Try adjusting your search' : 'Create your first adventure now'}</p>
+                                {!query && (
+                                    <button onClick={openCreate} className="btn-primary inline-flex items-center gap-2">
+                                        <Plus size={20} /> Create Trip
+                                    </button>
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
+                </main>
+
+                {/* Trip Modal */}
+                <TripModal
+                    open={modalOpen}
+                    onClose={() => setModalOpen(false)}
+                    onSubmit={handleSave}
+                    trip={formTrip}
+                    setTrip={setFormTrip}
+                    loading={saving}
+                />
+
+                {/* Chatbot */}
+                <Chatbot />
+            </div>
+        </div>
     );
 };
 
