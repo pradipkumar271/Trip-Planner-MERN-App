@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader, CheckCircle2 } from 'lucide-react';
 import OTPVerification from '../components/OTPVerification';
-import api from '../services/api';
 
 const getStrength = (pass) => {
     if (!pass) return 0;
@@ -31,7 +30,7 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showOTP, setShowOTP] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
-    const { finalizeLogin } = useAuth();
+    const { register } = useAuth();
     const navigate = useNavigate();
 
     const strength = getStrength(formData.password);
@@ -47,25 +46,21 @@ const Register = () => {
         setIsLoading(true);
 
         try {
-            // Send OTP to email
-            const response = await api.post('/api/auth/register/send-otp', {
-                name: formData.name,
-                email: formData.email,
-                password: formData.password
-            });
+            await register(formData.email, formData.password, formData.name);
 
             setRegisteredEmail(formData.email);
             setShowOTP(true);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to send OTP');
+            setError(err?.message || err?.response?.data?.message || 'Failed to send OTP');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleOTPVerify = (user) => {
-        finalizeLogin(user);
-        navigate('/dashboard');
+    const handleOTPVerify = () => {
+        navigate('/login', {
+            state: { successMessage: 'Account verified successfully. Please log in.' }
+        });
     };
 
     if (showOTP) {
@@ -80,7 +75,6 @@ const Register = () => {
                         email={registeredEmail}
                         onVerify={handleOTPVerify}
                         onBack={() => setShowOTP(false)}
-                        mode="register"
                     />
                 </div>
             </div>

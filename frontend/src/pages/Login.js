@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
-import OTPVerification from '../components/OTPVerification';
-import api from '../services/api';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [loginError, setLoginError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showOTP, setShowOTP] = useState(false);
-    const [loginEmail, setLoginEmail] = useState('');
     const { login } = useAuth();
 
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const successMessage = location.state?.successMessage;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,22 +20,13 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            // Send OTP to email
             await login(formData.email, formData.password);
-
-
-            setLoginEmail(formData.email);
-            setShowOTP(true);
+            navigate('/dashboard');
         } catch (error) {
-            console.error('Login OTP failed:', error);
-            setLoginError(error?.message || 'Failed to send OTP');
+            setLoginError(error?.message || 'Failed to login');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleOTPVerify = (user) => {
-        navigate('/dashboard');
     };
 
 
@@ -45,25 +34,6 @@ const Login = () => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
-
-    if (showOTP) {
-        return (
-            <div className="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
-                {/* Animated background gradient orbs */}
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-600/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
-
-                <div className="w-full max-w-md z-10">
-                    <OTPVerification
-                        email={loginEmail}
-                        onVerify={handleOTPVerify}
-                        onBack={() => setShowOTP(false)}
-                        mode="login"
-                    />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-dark relative overflow-hidden">
@@ -88,6 +58,12 @@ const Login = () => {
                 {/* Login Card */}
                 <div className="card-glass mb-6">
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        {successMessage && (
+                            <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-green-200 text-sm animate-fade-in">
+                                {successMessage}
+                            </div>
+                        )}
+
                         {/* Email */}
                         <div className="relative group">
                             <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">Email Address</label>
@@ -140,7 +116,7 @@ const Login = () => {
                             {isLoading ? (
                                 <>
                                     <Loader className="w-5 h-5 animate-spin" />
-                                    Sending OTP...
+                                    Signing In...
                                 </>
                             ) : (
                                 <>

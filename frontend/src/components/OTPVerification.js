@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader } from 'lucide-react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 
-export default function OTPVerification({ email, onVerify, onBack, mode = 'register' }) {
+export default function OTPVerification({ email, onVerify, onBack }) {
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(300);
     const [canResend, setCanResend] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const { finalizeLogin } = useAuth();
 
     useEffect(() => {
         if (timer === 0) {
@@ -55,14 +53,8 @@ export default function OTPVerification({ email, onVerify, onBack, mode = 'regis
 
         setLoading(true);
         try {
-            const endpoint = mode === 'register' ? '/api/auth/register/verify-otp' : '/api/auth/login/verify-otp';
-            const response = await api.post(endpoint, { email, otp });
-
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                finalizeLogin(response.data.user);
-                onVerify(response.data.user);
-            }
+            const response = await api.post('/api/auth/verify-otp', { email, otp });
+            onVerify(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'OTP verification failed');
         } finally {
@@ -75,8 +67,7 @@ export default function OTPVerification({ email, onVerify, onBack, mode = 'regis
         setLoading(true);
 
         try {
-            const endpoint = mode === 'register' ? '/api/auth/register/resend-otp' : '/api/auth/login/resend-otp';
-            const response = await api.post(endpoint, { email });
+            const response = await api.post('/api/auth/resend-otp', { email });
 
             setOtp('');
             setTimer(response.data.expiresIn || 300); // 5 minutes
@@ -191,7 +182,7 @@ export default function OTPVerification({ email, onVerify, onBack, mode = 'regis
                 <button
                     type="button"
                     onClick={handleResend}
-                    disabled={(!canResend && resendCooldown > 0) || loading}
+                    disabled={!canResend || resendCooldown > 0 || loading}
                     className="w-full py-3 rounded-lg bg-white/10 text-white font-medium hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 >
                     {canResend && resendCooldown === 0 ? (

@@ -18,13 +18,6 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
     };
 
-    const finalizeLogin = (userData) => {
-        if (userData) {
-            localStorage.setItem("user", JSON.stringify(userData));
-            setUser(userData);
-        }
-    };
-
     const updateUser = (userData) => {
         const merged = { ...user, ...userData };
         localStorage.setItem("user", JSON.stringify(merged));
@@ -42,8 +35,6 @@ export const AuthProvider = ({ children }) => {
                 password
             });
 
-            setAuth(res.data.token, res.data.user);
-
             return res.data;
 
         } catch (err) {
@@ -57,37 +48,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // ================= LOGIN STEP 1 (SEND OTP) =================
+    // ================= LOGIN =================
 
     const login = async (email, password) => {
         try {
 
-            const res = await api.post("/api/auth/login/send-otp", {
+            const res = await api.post("/api/auth/login", {
                 email,
                 password
-            });
-
-            return res.data;
-
-        } catch (err) {
-
-            const message =
-                err?.response?.data?.message ||
-                err.message ||
-                "Login failed";
-
-            throw new Error(message);
-        }
-    };
-
-    // ================= LOGIN STEP 2 (VERIFY OTP) =================
-
-    const verifyLoginOtp = async (email, otp) => {
-        try {
-
-            const res = await api.post("/api/auth/login/verify-otp", {
-                email,
-                otp
             });
 
             setAuth(res.data.token, res.data.user);
@@ -99,7 +67,7 @@ export const AuthProvider = ({ children }) => {
             const message =
                 err?.response?.data?.message ||
                 err.message ||
-                "OTP verification failed";
+                "Login failed";
 
             throw new Error(message);
         }
@@ -118,8 +86,6 @@ export const AuthProvider = ({ children }) => {
     const value = {
         register,
         login,
-        verifyLoginOtp,
-        finalizeLogin,
         updateUser,
         logout,
         user

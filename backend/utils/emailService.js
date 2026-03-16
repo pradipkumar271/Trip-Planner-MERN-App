@@ -1,140 +1,132 @@
-// Email service for OTP verification using nodemailer with Ethereal Email
 const nodemailer = require('nodemailer');
+
+const OTP_EXPIRY_MINUTES = 5;
+let cachedTransporter = null;
 
 const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-let cachedTransporter = null;
+const createEmailTransporter = () => {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
 
-const getTransporter = async () => {
-    // Return cached transporter if available
-    if (cachedTransporter) {
-        return cachedTransporter;
+    if (!emailUser || !emailPass) {
+        throw new Error('Email credentials are missing. Set EMAIL_USER and EMAIL_PASS in backend .env');
     }
 
-    try {
-        // Check if Gmail credentials are configured in .env
-        const hasGmailConfig = process.env.EMAIL_USER &&
-            !process.env.EMAIL_USER.includes('your-email') &&
-            process.env.EMAIL_PASSWORD &&
-            !process.env.EMAIL_PASSWORD.includes('your-app-password');
-
-        if (hasGmailConfig) {
-            // Use configured Gmail account
-            cachedTransporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASSWORD
-                }
-            });
-            console.log('✅ Using configured Gmail account for email sending');
-        } else {
-            // Generate Ethereal test account (works with any email)
-            console.log('🔧 Generating Ethereal test account for email sending...');
-            const testAccount = await nodemailer.createTestAccount();
-
-            cachedTransporter = nodemailer.createTransport({
-                host: testAccount.smtp.host,
-                port: testAccount.smtp.port,
-                secure: testAccount.smtp.secure,
-                auth: {
-                    user: testAccount.user,
-                    pass: testAccount.pass
-                }
-            });
-
-            console.log('✅ Using Ethereal Email test account (auto-generated)');
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: emailUser,
+            pass: emailPass
         }
+    });
+};
 
-        return cachedTransporter;
-    } catch (err) {
-        console.error('❌ Error setting up transporter:', err.message);
-        throw err;
+const getEmailTransporter = async () => {
+    if (!cachedTransporter) {
+        cachedTransporter = createEmailTransporter();
+        await cachedTransporter.verify();
     }
+
+    return cachedTransporter;
+};
+
+const buildOTPEmailTemplate = ({ name, otp }) => {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Account</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f6fb;font-family:Segoe UI,Arial,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f6fb;padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+                    <tr>
+                        <td style="background:#0f172a;padding:24px 32px;text-align:center;">
+                            <h1 style="margin:0;font-size:24px;color:#ffffff;letter-spacing:0.2px;">Trip Planner</h1>
+                            <p style="margin:8px 0 0;color:#cbd5e1;font-size:14px;">Account Verification</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Hello ${name},</p>
+                            <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#334155;">
+                                Thank you for registering. Use the OTP below to verify your account.
+                            </p>
+                            <div style="margin:0 auto 20px;max-width:260px;background:#f8fafc;border:2px solid #cbd5e1;border-radius:10px;padding:16px 12px;text-align:center;">
+                                <div style="font-size:34px;letter-spacing:8px;font-weight:700;color:#0f172a;font-family:'Courier New',monospace;">${otp}</div>
+                            </div>
+                            <p style="margin:0 0 12px;font-size:14px;color:#334155;">
+                                This code will expire in <strong>${OTP_EXPIRY_MINUTES} minutes</strong>.
+                            </p>
+                            <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
+                                If you did not request this, please ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                            <p style="margin:0;font-size:12px;color:#64748b;text-align:center;">
+                                This is an automated message. Please do not reply.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `;
+};
+
+const buildOTPText = ({ name, otp }) => {
+    return [
+        `Hello ${name},`,
+        '',
+        'Your verification code is:',
+        otp,
+        '',
+        `This code will expire in ${OTP_EXPIRY_MINUTES} minutes.`,
+        '',
+        'If you did not request this, please ignore the email.'
+    ].join('\n');
 };
 
 const sendOTPEmail = async (email, otp, name) => {
-    try {
-        const transporter = await getTransporter();
-
-        const mailOptions = {
-            from: process.env.EMAIL_USER || 'trips@example.com',
-            to: email,
-            subject: '🔐 Your OTP Verification Code - Trip Planner',
-            html: `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; border-radius: 10px;">
-                    <div style="background: white; border-radius: 10px; padding: 40px; text-align: center;">
-                        <div style="margin-bottom: 30px;">
-                            <div style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; margin-bottom: 20px;">🔐</div>
-                            <h2 style="color: #333; margin: 0 0 10px 0; font-size: 28px;">OTP Verification</h2>
-                            <p style="color: #666; margin: 0; font-size: 16px;">Your security code for Trip Planner</p>
-                        </div>
-                        
-                        <p style="color: #555; margin: 20px 0; font-size: 16px;">Hi <strong>${name}</strong>,</p>
-                        
-                        <p style="color: #666; margin: 20px 0; font-size: 14px;">Your one-time password (OTP) for verification is:</p>
-                        
-                        <div style="background: #f5f5f5; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 30px 0;">
-                            <div style="font-size: 48px; font-weight: bold; color: #667eea; letter-spacing: 10px; font-family: 'Courier New', monospace;">${otp}</div>
-                        </div>
-                        
-                        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; text-align: left;">
-                            <p style="color: #856404; margin: 0; font-size: 14px;"><strong>⏱️ Expires in:</strong> 5 minutes</p>
-                            <p style="color: #856404; margin: 5px 0 0 0; font-size: 14px;"><strong>⚠️ Important:</strong> Do not share this code with anyone!</p>
-                        </div>
-                        
-                        <p style="color: #999; margin: 30px 0 0 0; font-size: 12px; border-top: 1px solid #eee; padding-top: 20px;">If you didn't request this code, please ignore this email.</p>
-                    </div>
-                </div>
-            `
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-
-        // Log OTP to console in development
-        console.log(`
-╔════════════════════════════════════════════════════════════╗
-║                  🔐 OTP VERIFICATION CODE                  ║
-╚════════════════════════════════════════════════════════════╝
-To: ${email}
-User: ${name}
-
-📧 OTP EMAIL DETAILS:
-   Recipient: ${email}
-   OTP Code: ${otp}
-   Valid for: 5 minutes
-   
-📨 Preview: ${nodemailer.getTestMessageUrl(info) || 'Email sent successfully'}
-
-════════════════════════════════════════════════════════════
-        `);
-
-        console.log(`✅ OTP email sent successfully to ${email}`);
-        return true;
-
-    } catch (err) {
-        console.error('❌ Error in sendOTPEmail:', err.message);
-        console.warn('⚠️  Email sending failed, but OTP is still valid in database');
-
-        // Log fallback OTP for debugging
-        console.log(`
-╔════════════════════════════════════════════════════════════╗
-║              ⚠️  FALLBACK OTP (Email Failed)              ║
-╚════════════════════════════════════════════════════════════╝
-Email: ${email}
-Name: ${name}
-OTP Code: ${otp}
-Valid for: 5 minutes
-════════════════════════════════════════════════════════════
-        `);
-
-        return true; // Allow registration to proceed even if email fails
+    if (!email || !otp) {
+        throw new Error('Email and OTP are required to send verification email');
     }
+
+    const safeName = String(name || 'User').trim() || 'User';
+
+    // Development fallback to avoid blocking local testing.
+    if (process.env.EMAIL_MODE === 'console') {
+        console.log(`[OTP][console] email=${email} otp=${otp} expiresIn=${OTP_EXPIRY_MINUTES}m`);
+        return { accepted: [email], response: 'console-mode' };
+    }
+
+    const transporter = await getEmailTransporter();
+
+    return transporter.sendMail({
+        from: `"Trip Planner" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Verify Your Account',
+        text: buildOTPText({ name: safeName, otp }),
+        html: buildOTPEmailTemplate({ name: safeName, otp })
+    });
 };
 
 module.exports = {
+    createEmailTransporter,
+    getEmailTransporter,
+    buildOTPEmailTemplate,
     generateOTP,
     sendOTPEmail
 };
