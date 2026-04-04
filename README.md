@@ -58,7 +58,8 @@ Create a `.env` file in the **backend** folder and add:
 ### 4️⃣ Run the App 🚀
 ```bash
 # In backend folder
-npm start
+npm run dev
+# (Note: Use npm start if you don't have a dev script configured)
 
 # In frontend folder
 npm start
